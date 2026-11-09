@@ -94,7 +94,10 @@
             <button id="btn-close-create" class="btn-icon"><span class="material-icons-outlined">close</span></button>
         </div>
         <div class="modal-body">
-            <input type="text" id="create-title" class="md-input" placeholder="标题 (必填)" style="margin-bottom: 15px;">
+            <div class="create-title-row">
+                <select id="create-type" class="md-select" aria-label="工单类型"></select>
+                <input type="text" id="create-title" class="md-input" placeholder="标题 (必填)">
+            </div>
             <textarea id="create-body" class="md-input" rows="8" placeholder="描述你的问题或建议 (支持 Markdown)..."></textarea>
             <div class="actions" style="margin-top: 15px; display: flex; justify-content: flex-end;">
                 <button id="btn-submit-ticket" class="btn btn-primary">提交</button>

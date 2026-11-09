@@ -65,6 +65,23 @@ function getHeaders() {
     return headers;
 }
 
+// --- 工单类型下拉框 ---
+function populateTypeSelect() {
+    const select = document.getElementById('create-type');
+    if (!select) return;
+    select.innerHTML = CONFIG.TICKET_TYPES.map(t =>
+        `<option value="${t.label}">${t.name}</option>`
+    ).join('');
+    select.value = CONFIG.DEFAULT_TICKET_TYPE;
+}
+
+function resetCreateForm() {
+    document.getElementById('create-title').value = '';
+    document.getElementById('create-body').value = '';
+    const select = document.getElementById('create-type');
+    if (select) select.value = CONFIG.DEFAULT_TICKET_TYPE;
+}
+
 async function fetchIssues() {
     let url = `${API_BASE}/issues?labels=${CONFIG.LABEL}&state=${state.filterState}&per_page=50&sort=created&direction=desc`;
     
@@ -79,11 +96,15 @@ async function fetchIssues() {
     return res.json();
 }
 
-async function createIssue(title, body) {
+async function createIssue(title, body, typeLabel) {
+    // 工单必须带 Ticket 标签，类型标签为可选的附加标签
+    const labels = [CONFIG.LABEL];
+    if (typeLabel && typeLabel !== CONFIG.LABEL) labels.push(typeLabel);
+
     const res = await fetch(`${API_BASE}/issues`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ title, body, labels: [CONFIG.LABEL] })
+        body: JSON.stringify({ title, body, labels })
     });
     if (!res.ok) throw new Error('创建失败，请检查 PAT 权限');
     return res.json();
@@ -267,12 +288,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 创建工单事件
-    document.getElementById('btn-create').onclick = () => document.getElementById('create-modal').showModal();
+    populateTypeSelect();
+    document.getElementById('btn-create').onclick = () => {
+        document.getElementById('create-type').value = CONFIG.DEFAULT_TICKET_TYPE;
+        document.getElementById('create-modal').showModal();
+    };
     document.getElementById('btn-close-create').onclick = () => document.getElementById('create-modal').close();
     
     document.getElementById('btn-submit-ticket').onclick = async () => {
         const title = document.getElementById('create-title').value.trim();
         const body = document.getElementById('create-body').value.trim();
+        const typeLabel = document.getElementById('create-type').value;
         if (!title) return alert('请输入标题');
         
         const btn = document.getElementById('btn-submit-ticket');
@@ -280,10 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
 
         try {
-            await createIssue(title, body);
+            await createIssue(title, body, typeLabel);
             document.getElementById('create-modal').close();
-            document.getElementById('create-title').value = '';
-            document.getElementById('create-body').value = '';
+            resetCreateForm();
             loadIssues();
         } catch (err) {
             alert(err.message);

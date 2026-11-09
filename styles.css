@@ -349,6 +349,26 @@ dialog::backdrop {
     border-color: transparent;
 }
 
+/* 新建工单：类型下拉框 + 标题输入框（下拉框位于标题左侧） */
+.create-title-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.create-title-row .md-select {
+    flex: 0 0 auto;
+    min-width: 128px;
+    border-radius: 8px;
+    padding: 0 12px;
+}
+
+.create-title-row .md-input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 /* 分隔线 / 评论 */
 .divider {
     border: none;
