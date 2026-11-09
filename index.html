@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 跟随系统/浏览器深浅色：声明支持的配色方案，并给地址栏两个主题色 -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#FEF7FF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121016" media="(prefers-color-scheme: dark)">
+    <title>TouchFish Feedback</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <!-- 安全渲染 Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="app-bar">
+        <div class="logo">
+            <span class="material-icons-outlined">bug_report</span>
+            <h1>TouchFish Feedback</h1>
+        </div>
+        <div id="auth-section">
+            <button id="btn-login" class="btn btn-primary">登录</button>
+        </div>
+    </header>
+
+    <!-- 工具栏 (筛选与操作) -->
+    <section class="toolbar">
+        <div class="filter-group">
+            <div class="tabs" id="state-tabs">
+                <button class="tab active" data-state="open">Open</button>
+                <button class="tab" data-state="closed">Closed</button>
+                <button class="tab" data-state="all">All</button>
+            </div>
+            <select id="scope-filter" class="md-select" disabled>
+                <option value="all">所有工单</option>
+                <option value="created">我创建的</option>
+                <option value="assigned">分配给我的</option>
+            </select>
+        </div>
+        <button id="btn-create" class="btn btn-fab" style="display: none;">
+            <span class="material-icons-outlined">add</span> 新建工单
+        </button>
+    </section>
+
+    <!-- 主列表区 -->
+    <main id="ticket-list" class="ticket-list">
+        <div class="loading">加载中...</div>
+    </main>
+
+    <!-- 弹窗：PAT 登录 -->
+    <dialog id="login-modal" class="md-dialog">
+        <h2>使用 PAT 登录</h2>
+        <p class="hint" style="margin-bottom: 16px;">
+            请前往 GitHub <a href="https://github.com/settings/tokens" target="_blank">Personal Access Tokens</a> 生成 Token。<br>
+            <b>Classic PAT 需勾选 <code>repo</code> 权限</b>，或者 Fine-grained PAT 授予该仓库的 <b>Issues Read & Write</b> 权限。
+        </p>
+        <input type="password" id="pat-input" placeholder="ghp_xxxxxxxxxxxx" class="md-input">
+        <div class="actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button id="btn-cancel-login" class="btn btn-text">取消</button>
+            <button id="btn-pat-login" class="btn btn-primary">登录</button>
+        </div>
+    </dialog>
+
+    <!-- 弹窗：工单详情 -->
+    <dialog id="detail-modal" class="md-dialog large">
+        <div class="modal-header">
+            <h2 id="detail-title">标题</h2>
+            <button id="btn-close-detail" class="btn-icon"><span class="material-icons-outlined">close</span></button>
+        </div>
+        <div class="modal-body">
+            <div id="detail-meta" class="meta" style="margin-bottom: 16px;"></div>
+            <div id="detail-body" class="markdown-body"></div>
+            <hr class="divider">
+            <h3>评论</h3>
+            <div id="comments-list"></div>
+            <div id="comment-box" style="display: none; margin-top: 15px;">
+                <textarea id="comment-input" class="md-input" rows="3" placeholder="写下你的评论..."></textarea>
+                <div class="actions" style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <button id="btn-close-ticket" class="btn btn-danger">关闭工单</button>
+                    <button id="btn-submit-comment" class="btn btn-primary">发送评论</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 弹窗：新建工单 -->
+    <dialog id="create-modal" class="md-dialog large">
+        <div class="modal-header">
+            <h2>新建工单</h2>
+            <button id="btn-close-create" class="btn-icon"><span class="material-icons-outlined">close</span></button>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="create-title" class="md-input" placeholder="标题 (必填)" style="margin-bottom: 15px;">
+            <textarea id="create-body" class="md-input" rows="8" placeholder="描述你的问题或建议 (支持 Markdown)..."></textarea>
+            <div class="actions" style="margin-top: 15px; display: flex; justify-content: flex-end;">
+                <button id="btn-submit-ticket" class="btn btn-primary">提交</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 脚本 -->
+    <script src="config.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
