@@ -176,6 +176,42 @@ body {
 }
 .btn-icon:hover { background-color: var(--md-sys-color-surface-variant); }
 
+/* 详情页关闭操作：默认只显示图标，hover 时在右侧展开文字 */
+.close-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.icon-action {
+    width: 40px;
+    border-radius: 100px;
+    justify-content: flex-start;
+    gap: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.2s ease, gap 0.2s ease, background-color 0.2s;
+}
+.icon-action:hover,
+.icon-action:focus-visible {
+    width: 112px;
+    gap: 6px;
+}
+.icon-action .material-symbols-outlined {
+    flex: 0 0 auto;
+    font-size: 24px;
+}
+.icon-action .action-label {
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.15s ease 0.05s;
+}
+.icon-action:hover .action-label,
+.icon-action:focus-visible .action-label {
+    opacity: 1;
+}
+.icon-action.danger { color: var(--md-sys-color-error); }
+.icon-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .btn-fab {
     background-color: var(--md-sys-color-primary);
     color: var(--md-sys-color-on-primary);

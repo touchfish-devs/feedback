@@ -230,11 +230,11 @@ async function addComment(issueNumber, body) {
     return res.json();
 }
 
-async function closeIssue(issueNumber) {
+async function closeIssue(issueNumber, stateReason) {
     const res = await fetch(`${API_BASE}/issues/${issueNumber}`, {
         method: 'PATCH',
         headers: getHeaders(),
-        body: JSON.stringify({ state: 'closed' })
+        body: JSON.stringify({ state: 'closed', state_reason: stateReason })
     });
     if (!res.ok) throw new Error('关闭失败，权限不足');
     return res.json();
@@ -371,13 +371,14 @@ async function openDetail(issueNumber) {
     // 权限控制 (Collaborator 或 创建者自己)
     const canManage = Auth.user && (Auth.isCollaborator || issue.user.login === Auth.user.login);
     const commentBox = document.getElementById('comment-box');
-    const btnClose = document.getElementById('btn-close-ticket');
+    const closeActions = document.getElementById('close-actions');
 
     if (canManage && issue.state === 'open') {
         commentBox.style.display = 'block';
-        btnClose.style.display = 'inline-flex';
+        closeActions.style.display = 'flex';
     } else {
         commentBox.style.display = 'none';
+        closeActions.style.display = 'none';
     }
 
     document.getElementById('comments-list').innerHTML = '<div class="loading">加载评论中...</div>';
@@ -504,21 +505,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    document.getElementById('btn-close-ticket').onclick = async () => {
-        if (!state.currentIssue || !confirm('确定要关闭此工单吗？')) return;
-        const btn = document.getElementById('btn-close-ticket');
-        btn.innerText = '关闭中...';
-        btn.disabled = true;
+    const closeTicketWithReason = async (reason, confirmMessage) => {
+        if (!state.currentIssue || !confirm(confirmMessage)) return;
+        const finishBtn = document.getElementById('btn-finish-ticket');
+        const closeBtn = document.getElementById('btn-close-ticket');
+        finishBtn.disabled = true;
+        closeBtn.disabled = true;
 
         try {
-            await closeIssue(state.currentIssue.number);
+            const updated = await closeIssue(state.currentIssue.number, reason);
+            state.currentIssue = updated;
             document.getElementById('detail-modal').close();
             loadIssues();
         } catch (err) {
             alert(err.message);
         } finally {
-            btn.innerText = '关闭工单';
-            btn.disabled = false;
+            finishBtn.disabled = false;
+            closeBtn.disabled = false;
         }
     };
+
+    document.getElementById('btn-finish-ticket').onclick = () =>
+        closeTicketWithReason('completed', '确定结束此工单吗？（标记为已完成）');
+    document.getElementById('btn-close-ticket').onclick = () =>
+        closeTicketWithReason('not_planned', '确定关闭此工单吗？（标记为不计划处理）');
 });

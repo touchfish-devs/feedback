@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
     <!-- 安全渲染 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
@@ -79,8 +80,17 @@
             <div id="comments-list"></div>
             <div id="comment-box" style="display: none; margin-top: 15px;">
                 <textarea id="comment-input" class="md-input" rows="3" placeholder="写下你的评论..."></textarea>
-                <div class="actions" style="margin-top: 10px; display: flex; justify-content: space-between;">
-                    <button id="btn-close-ticket" class="btn btn-danger">关闭工单</button>
+                <div class="actions" style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div id="close-actions" class="close-actions">
+                        <button id="btn-finish-ticket" class="btn btn-icon icon-action" title="结束工单（已完成）" aria-label="结束工单">
+                            <span class="material-symbols-outlined">check</span>
+                            <span class="action-label">结束工单</span>
+                        </button>
+                        <button id="btn-close-ticket" class="btn btn-icon icon-action danger" title="关闭工单（不计划处理）" aria-label="关闭工单">
+                            <span class="material-symbols-outlined">delete_forever</span>
+                            <span class="action-label">关闭工单</span>
+                        </button>
+                    </div>
                     <button id="btn-submit-comment" class="btn btn-primary">发送评论</button>
                 </div>
             </div>
