@@ -272,7 +272,9 @@ function renderAssignees(issue, withNames = false) {
         return `<img class="assignee-avatar" src="${escapeHtml(avatar)}" alt="${escapeHtml(assignee.login)}" title="受理人：${escapeHtml(assignee.login)}" width="24" height="24">`;
     }).join('');
     const names = withNames
-        ? `<span class="assignee-names">${assignees.map(a => escapeHtml(a.login)).join(', ')}</span>` : '';
+        ? `<span class="assignee-names">${assignees.map(a =>
+            `<a href="https://github.com/${encodeURIComponent(a.login)}" target="_blank" rel="noopener noreferrer" title="查看 ${escapeHtml(a.login)} 的 GitHub 主页">${escapeHtml(a.login)}</a>`
+        ).join(', ')}</span>` : '';
     return `<span class="assignees">${avatars}${names}</span>`;
 }
 
