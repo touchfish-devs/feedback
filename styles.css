@@ -27,6 +27,11 @@
     --md-sys-color-on-success-container: #2E7D32;
     --md-sys-color-error-container: #FFEBEE;
     --md-sys-color-on-error-container: #C62828;
+    /* Issue 状态：completed 紫色，其他关闭原因灰色（与 GitHub 一致） */
+    --md-sys-color-completed-container: #FBEFFF;
+    --md-sys-color-on-completed-container: #8250DF;
+    --md-sys-color-closed-container: #EFF1F3;
+    --md-sys-color-on-closed-container: #57606A;
 
     --md-sys-color-backdrop: rgba(0, 0, 0, 0.5);
 
@@ -59,6 +64,10 @@
         --md-sys-color-on-success-container: #9CD69F;
         --md-sys-color-error-container: #3C1A1A;
         --md-sys-color-on-error-container: #FFB4AB;
+        --md-sys-color-completed-container: #3B2257;
+        --md-sys-color-on-completed-container: #D2A8FF;
+        --md-sys-color-closed-container: #3A3F45;
+        --md-sys-color-on-closed-container: #C9D1D9;
 
         --md-sys-color-backdrop: rgba(0, 0, 0, 0.7);
 
@@ -285,9 +294,13 @@ body {
     background: var(--md-sys-color-success-container);
     color: var(--md-sys-color-on-success-container);
 }
-.badge.closed {
-    background: var(--md-sys-color-error-container);
-    color: var(--md-sys-color-on-error-container);
+.badge.closed-completed {
+    background: var(--md-sys-color-completed-container);
+    color: var(--md-sys-color-on-completed-container);
+}
+.badge.closed-other {
+    background: var(--md-sys-color-closed-container);
+    color: var(--md-sys-color-on-closed-container);
 }
 .badge.type {
     background: var(--md-sys-color-surface-variant);

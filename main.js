@@ -246,6 +246,15 @@ async function fetchComments(issueNumber) {
 }
 
 // --- UI 渲染 ---
+function renderStateBadge(issue) {
+    if (issue.state === 'open') return '<span class="badge open">OPEN</span>';
+    if (issue.state_reason === 'completed') {
+        return '<span class="badge closed-completed" title="已完成">COMPLETED</span>';
+    }
+    const reason = issue.state_reason ? `（${issue.state_reason}）` : '';
+    return `<span class="badge closed-other" title="已关闭${escapeHtml(reason)}">CLOSED</span>`;
+}
+
 function getIssueType(issue) {
     const labels = (issue.labels || []).map(l => typeof l === 'string' ? l : l.name).filter(Boolean);
     const matched = CONFIG.TICKET_TYPES.find(t => labels.includes(t.label));
@@ -331,7 +340,7 @@ function renderList() {
             <div class="ticket-info">
                 <h3>#${issue.number} ${escapeHtml(issue.title)}</h3>
                 <div class="ticket-meta">
-                    <span class="badge ${escapeHtml(issue.state)}">${escapeHtml(issue.state.toUpperCase())}</span>
+                    ${renderStateBadge(issue)}
                     ${renderTypeBadge(issue)}
                     <span>由 ${escapeHtml(issue.user.login)} 创建于 ${new Date(issue.created_at).toLocaleDateString()}</span>
                     <span>💬 ${issue.comments}</span>
@@ -349,7 +358,7 @@ async function openDetail(issueNumber) {
 
     document.getElementById('detail-title').innerText = `#${issue.number} ${issue.title}`;
     document.getElementById('detail-meta').innerHTML = `
-        <span class="badge ${escapeHtml(issue.state)}">${escapeHtml(issue.state.toUpperCase())}</span>
+        ${renderStateBadge(issue)}
         ${renderTypeBadge(issue)}
         <span>由 <b>${escapeHtml(issue.user.login)}</b> 创建于 ${new Date(issue.created_at).toLocaleString()}</span>
         <span class="detail-assignee">受理人：${renderAssignees(issue, true)}</span>
