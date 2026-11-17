@@ -289,6 +289,52 @@ body {
     background: var(--md-sys-color-error-container);
     color: var(--md-sys-color-on-error-container);
 }
+.badge.type {
+    background: var(--md-sys-color-surface-variant);
+    color: var(--md-sys-color-on-surface-variant);
+    border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* 受理人头像（来自 GitHub） */
+.assignees {
+    display: inline-flex;
+    align-items: center;
+}
+.assignee-avatar {
+    border-radius: 50%;
+    flex: 0 0 auto;
+    background-color: var(--md-sys-color-surface-variant);
+}
+.assignees .assignee-avatar + .assignee-avatar {
+    margin-left: -6px;
+}
+.assignee-names {
+    font-size: 13px;
+    margin-left: 6px;
+}
+.assignee-empty {
+    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+.ticket-assignee {
+    margin-left: 16px;
+    flex: 0 0 auto;
+}
+
+/* 详情元信息 */
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+.detail-assignee {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
 
 /* 空态 / 加载 / 错误：占满列表容器并垂直居中 */
 .loading, .empty, .error {
@@ -367,6 +413,51 @@ dialog::backdrop {
 .create-title-row .md-input {
     flex: 1 1 auto;
     min-width: 0;
+}
+
+/* 新建工单：按 Issue 模板动态生成的字段 */
+.create-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: calc(100dvh - 140px);
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.create-intro {
+    white-space: pre-line;
+    line-height: 1.5;
+}
+.create-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: none;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+.field-label {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0;
+}
+.field-desc {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--md-sys-color-on-surface-variant);
+}
+.checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    cursor: pointer;
+}
+.checkbox-row input {
+    margin: 3px 0 0;
+    flex: 0 0 auto;
 }
 
 /* 分隔线 / 评论 */

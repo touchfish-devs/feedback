@@ -97,21 +97,99 @@ function getHeaders() {
     return headers;
 }
 
-// --- 工单类型下拉框 ---
+// --- 新建工单表单（由 Issue 模板驱动） ---
+let currentTicketType = null;
+
+function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[ch]);
+}
+
+function getTicketType(label) {
+    return CONFIG.TICKET_TYPES.find(t => t.label === label) || CONFIG.TICKET_TYPES[0];
+}
+
+function renderCreateFields(type) {
+    const container = document.getElementById('create-fields');
+    container.innerHTML = (type.fields || []).map(field => {
+        const description = field.description
+            ? `<div class="field-desc">${escapeHtml(field.description)}</div>` : '';
+        if (field.type === 'checkbox') {
+            const options = (field.options || []).map(option => `
+                <label class="checkbox-row">
+                    <input type="checkbox" data-field-id="${escapeHtml(field.id)}" value="${escapeHtml(option.label)}"${option.required ? ' required' : ''}>
+                    <span>${escapeHtml(option.label)}</span>
+                </label>
+            `).join('');
+            return `<fieldset class="create-field"><legend class="field-label">${escapeHtml(field.label)}</legend>${description}${options}</fieldset>`;
+        }
+
+        const required = field.required ? ' required' : '';
+        const placeholder = field.placeholder ? ` placeholder="${escapeHtml(field.placeholder)}"` : '';
+        const fieldId = escapeHtml(field.id);
+        const input = field.type === 'textarea'
+            ? `<textarea id="field-${fieldId}" class="md-input" rows="4" data-field-id="${fieldId}"${placeholder}${required}></textarea>`
+            : `<input id="field-${fieldId}" type="text" class="md-input" data-field-id="${fieldId}"${placeholder}${required}>`;
+        return `
+            <div class="create-field">
+                <label class="field-label" for="field-${fieldId}">${escapeHtml(field.label)}</label>
+                ${description}
+                ${input}
+            </div>
+        `;
+    }).join('');
+}
+
+function setTicketType(label) {
+    const type = getTicketType(label);
+    const titleInput = document.getElementById('create-title');
+    const previousPrefix = currentTicketType ? (getTicketType(currentTicketType).titlePrefix || '') : '';
+    let title = titleInput.value;
+    if (previousPrefix && title.startsWith(previousPrefix)) {
+        title = title.slice(previousPrefix.length);
+    }
+    titleInput.value = (type.titlePrefix || '') + title;
+
+    const intro = document.getElementById('create-intro');
+    intro.textContent = type.intro || '';
+    intro.style.display = type.intro ? 'block' : 'none';
+
+    renderCreateFields(type);
+    currentTicketType = type.label;
+}
+
 function populateTypeSelect() {
     const select = document.getElementById('create-type');
     if (!select) return;
     select.innerHTML = CONFIG.TICKET_TYPES.map(t =>
-        `<option value="${t.label}">${t.name}</option>`
+        `<option value="${escapeHtml(t.label)}">${escapeHtml(t.name)}</option>`
     ).join('');
     select.value = CONFIG.DEFAULT_TICKET_TYPE;
+    setTicketType(CONFIG.DEFAULT_TICKET_TYPE);
 }
 
 function resetCreateForm() {
-    document.getElementById('create-title').value = '';
-    document.getElementById('create-body').value = '';
-    const select = document.getElementById('create-type');
-    if (select) select.value = CONFIG.DEFAULT_TICKET_TYPE;
+    document.getElementById('create-form').reset();
+    populateTypeSelect();
+}
+
+function buildIssueBody(type) {
+    const parts = [];
+    if (type.intro) parts.push(type.intro);
+
+    (type.fields || []).forEach(field => {
+        let value;
+        if (field.type === 'checkbox') {
+            value = [...document.querySelectorAll(`input[type="checkbox"][data-field-id="${CSS.escape(field.id)}"]:checked`)]
+                .map(input => `- [x] ${input.value}`).join('\n');
+        } else {
+            const input = document.querySelector(`[data-field-id="${CSS.escape(field.id)}"]`);
+            value = input ? input.value.trim() : '';
+        }
+        if (value) parts.push(`### ${field.label}\n\n${value}`);
+    });
+    return parts.join('\n\n');
 }
 
 async function fetchIssues() {
@@ -168,6 +246,36 @@ async function fetchComments(issueNumber) {
 }
 
 // --- UI 渲染 ---
+function getIssueType(issue) {
+    const labels = (issue.labels || []).map(l => typeof l === 'string' ? l : l.name).filter(Boolean);
+    const matched = CONFIG.TICKET_TYPES.find(t => labels.includes(t.label));
+    if (matched) return { label: matched.label, name: matched.name };
+    const extra = labels.find(name => name !== CONFIG.LABEL);
+    return extra ? { label: extra, name: extra } : null;
+}
+
+function renderTypeBadge(issue) {
+    const type = getIssueType(issue);
+    return type ? `<span class="badge type" title="${escapeHtml(type.label)}">${escapeHtml(type.name)}</span>` : '';
+}
+
+function getAssignees(issue) {
+    if (issue.assignees && issue.assignees.length) return issue.assignees.filter(Boolean);
+    return issue.assignee ? [issue.assignee] : [];
+}
+
+function renderAssignees(issue, withNames = false) {
+    const assignees = getAssignees(issue);
+    if (!assignees.length) return `<span class="assignee-empty">未受理</span>`;
+    const avatars = assignees.map(assignee => {
+        const avatar = assignee.avatar_url || `https://github.com/${encodeURIComponent(assignee.login)}.png?size=48`;
+        return `<img class="assignee-avatar" src="${escapeHtml(avatar)}" alt="${escapeHtml(assignee.login)}" title="受理人：${escapeHtml(assignee.login)}" width="24" height="24">`;
+    }).join('');
+    const names = withNames
+        ? `<span class="assignee-names">${assignees.map(a => escapeHtml(a.login)).join(', ')}</span>` : '';
+    return `<span class="assignees">${avatars}${names}</span>`;
+}
+
 function renderAuthUI() {
     const authSection = document.getElementById('auth-section');
     const btnCreate = document.getElementById('btn-create');
@@ -176,8 +284,8 @@ function renderAuthUI() {
     if (Auth.user) {
         authSection.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px;">
-                <img src="${Auth.user.avatar_url}" width="32" height="32" style="border-radius:50%;">
-                <span style="font-size: 14px;">${Auth.user.login} ${Auth.isCollaborator ? '(Admin)' : ''}</span>
+                <img src="${escapeHtml(Auth.user.avatar_url)}" width="32" height="32" style="border-radius:50%;">
+                <span style="font-size: 14px;">${escapeHtml(Auth.user.login)} ${Auth.isCollaborator ? '(Admin)' : ''}</span>
                 <button id="btn-logout" class="btn btn-text">登出</button>
             </div>
         `;
@@ -219,13 +327,15 @@ function renderList() {
     listEl.innerHTML = state.issues.map(issue => `
         <div class="ticket-card" onclick="openDetail(${issue.number})">
             <div class="ticket-info">
-                <h3>#${issue.number} ${issue.title}</h3>
+                <h3>#${issue.number} ${escapeHtml(issue.title)}</h3>
                 <div class="ticket-meta">
-                    <span class="badge ${issue.state}">${issue.state.toUpperCase()}</span>
-                    <span>由 ${issue.user.login} 创建于 ${new Date(issue.created_at).toLocaleDateString()}</span>
+                    <span class="badge ${escapeHtml(issue.state)}">${escapeHtml(issue.state.toUpperCase())}</span>
+                    ${renderTypeBadge(issue)}
+                    <span>由 ${escapeHtml(issue.user.login)} 创建于 ${new Date(issue.created_at).toLocaleDateString()}</span>
                     <span>💬 ${issue.comments}</span>
                 </div>
             </div>
+            <div class="ticket-assignee">${renderAssignees(issue)}</div>
         </div>
     `).join('');
 }
@@ -237,8 +347,10 @@ async function openDetail(issueNumber) {
 
     document.getElementById('detail-title').innerText = `#${issue.number} ${issue.title}`;
     document.getElementById('detail-meta').innerHTML = `
-        <span class="badge ${issue.state}">${issue.state.toUpperCase()}</span>
-        <span>由 <b>${issue.user.login}</b> 创建于 ${new Date(issue.created_at).toLocaleString()}</span>
+        <span class="badge ${escapeHtml(issue.state)}">${escapeHtml(issue.state.toUpperCase())}</span>
+        ${renderTypeBadge(issue)}
+        <span>由 <b>${escapeHtml(issue.user.login)}</b> 创建于 ${new Date(issue.created_at).toLocaleString()}</span>
+        <span class="detail-assignee">受理人：${renderAssignees(issue, true)}</span>
     `;
     
     // 安全渲染 Markdown
@@ -266,7 +378,7 @@ async function openDetail(issueNumber) {
         document.getElementById('comments-list').innerHTML = comments.map(c => `
             <div class="comment">
                 <div class="comment-meta">
-                    <b>${c.user.login}</b> 评论于 ${new Date(c.created_at).toLocaleString()}
+                    <b>${escapeHtml(c.user.login)}</b> 评论于 ${new Date(c.created_at).toLocaleString()}
                 </div>
                 <div class="markdown-body">${DOMPurify.sanitize(marked.parse(c.body))}</div>
             </div>
@@ -321,17 +433,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 创建工单事件
     populateTypeSelect();
+    document.getElementById('create-type').addEventListener('change', e => setTicketType(e.target.value));
     document.getElementById('btn-create').onclick = () => {
-        document.getElementById('create-type').value = CONFIG.DEFAULT_TICKET_TYPE;
+        resetCreateForm();
         document.getElementById('create-modal').showModal();
     };
     document.getElementById('btn-close-create').onclick = () => document.getElementById('create-modal').close();
     
-    document.getElementById('btn-submit-ticket').onclick = async () => {
-        const title = document.getElementById('create-title').value.trim();
-        const body = document.getElementById('create-body').value.trim();
+    document.getElementById('create-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!e.currentTarget.reportValidity()) return;
+
         const typeLabel = document.getElementById('create-type').value;
-        if (!title) return alert('请输入标题');
+        const type = getTicketType(typeLabel);
+        const title = document.getElementById('create-title').value.trim();
+        if (!title.slice((type.titlePrefix || '').length).trim()) return alert('请输入标题');
+        const body = buildIssueBody(type);
         
         const btn = document.getElementById('btn-submit-ticket');
         btn.innerText = '提交中...';
@@ -348,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerText = '提交';
             btn.disabled = false;
         }
-    };
+    });
 
     // 详情弹窗事件
     document.getElementById('btn-close-detail').onclick = () => document.getElementById('detail-modal').close();
