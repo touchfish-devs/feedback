@@ -1,10 +1,46 @@
 const API_BASE = `https://api.github.com/repos/${CONFIG.OWNER}/${CONFIG.REPO}`;
 
+// --- 登录态 Cookie 持久化 ---
+const AUTH_COOKIE_NAME = 'gh_ticket_auth';
+const AUTH_COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 天
+
+function getCookieAttrs(maxAge = AUTH_COOKIE_MAX_AGE) {
+    return `Path=/; Max-Age=${maxAge}; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+}
+
+function readAuthCookie() {
+    const prefix = `${AUTH_COOKIE_NAME}=`;
+    const item = document.cookie.split('; ').find(c => c.startsWith(prefix));
+    if (!item) return null;
+    try {
+        const data = JSON.parse(decodeURIComponent(item.slice(prefix.length)));
+        return data && data.token ? data : null;
+    } catch (e) {
+        console.warn('读取登录 Cookie 失败', e);
+        return null;
+    }
+}
+
+function writeAuthCookie() {
+    // 只保存页面所需的字段，避免 Cookie 体积过大
+    const data = {
+        token: Auth.token,
+        user: Auth.user ? { login: Auth.user.login, avatar_url: Auth.user.avatar_url } : null,
+        isCollaborator: Auth.isCollaborator
+    };
+    document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(data))}; ${getCookieAttrs()}`;
+}
+
+function clearAuthCookie() {
+    document.cookie = `${AUTH_COOKIE_NAME}=; ${getCookieAttrs(0)}`;
+}
+
 // --- 状态管理 ---
+const savedAuth = readAuthCookie();
 const Auth = {
-    token: sessionStorage.getItem('gh_ticket_token') || null,
-    user: JSON.parse(sessionStorage.getItem('gh_ticket_user')) || null,
-    isCollaborator: JSON.parse(sessionStorage.getItem('gh_is_collab')) || false,
+    token: savedAuth ? savedAuth.token : null,
+    user: savedAuth && savedAuth.user ? savedAuth.user : null,
+    isCollaborator: savedAuth ? savedAuth.isCollaborator === true : false,
 
     async loginWithPAT(pat) {
         if (!pat) throw new Error('请输入 PAT');
@@ -35,19 +71,15 @@ const Auth = {
             this.isCollaborator = false;
         }
 
-        // 保存到 sessionStorage
-        sessionStorage.setItem('gh_ticket_token', this.token);
-        sessionStorage.setItem('gh_ticket_user', JSON.stringify(this.user));
-        sessionStorage.setItem('gh_is_collab', JSON.stringify(this.isCollaborator));
+        // 保存到 Cookie
+        writeAuthCookie();
     },
 
     logout() {
         this.token = null;
         this.user = null;
         this.isCollaborator = false;
-        sessionStorage.removeItem('gh_ticket_token');
-        sessionStorage.removeItem('gh_ticket_user');
-        sessionStorage.removeItem('gh_is_collab');
+        clearAuthCookie();
     }
 };
 
